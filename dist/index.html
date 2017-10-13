@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>微信JSAPI演示</title>
+    <meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1.0,maximum-scale=1.0,minimum-scale=1.0">
+    <script src="http://static.sinreweb.com/common/js/libs/jquery.2.1.4.min.js"></script>
+    <script src="http://res.wx.qq.com/open/js/jweixin-1.0.0.js"></script>
+<script type="text/javascript" src="js/weixin.3.0.0.min.js?756fd8ea"></script></head>
+<body>
+    <h1>微信JSAPI演示</h1>
+    
+        publicPath
+        ""
+    
+        chunks
+        {"weixin":{"size":17596,"entry":"js/weixin.3.0.0.min.js?756fd8ea","hash":"756fd8ea0300ed6b6368","css":[]}}
+    
+        js
+        ["js/weixin.3.0.0.min.js?756fd8ea"]
+    
+        css
+        []
+    
+        manifest
+        
+    
+    
+    <script>
+    weixin.setDataForWeixin({
+        img: 'http://unisound.bm.sinreweb.com/campus/images/share.jpg', //需写绝对路径
+        url: location.href, //分享链接
+        title: '2018  U你一起AI', //分享标题
+        desc: '想试试用AI技术谱写一首独领风骚的嘻哈曲吗？' //分享描述 分享给朋友会用到
+    })
+
+    weixin.setDataForWeixin({
+        timeline: true,
+        img: '1', //需写绝对路径
+        url: '2', //分享链接
+        title: '3', //分享标题
+        desc: '4' //分享描述 分享给朋友会用到
+    })
+
+
+    </script>
+</body>
+</html>

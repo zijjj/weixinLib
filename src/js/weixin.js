@@ -1,51 +1,38 @@
-/**
- * @author star
- * 依赖jquery.js
- * 如果weixin.js 添加了interface属性，则使用该属性的地址进行拉取验证 如：
- * <script src="js/weixin.js" interface="http://www.baidu.com"></script>
- * 如果weixin.js 添加了json属性，则数据发挥类型使用该属性的值 如：
- * <script src="js/weixin.js" json="json"></script> //默认返回值是Jsonp格式
- */
-/*-----------------------------------微信分享  页面分享--------------------------*/
 ;(function (window, document, $) {
 	if(typeof $ == "undefined"){
 		console.error("请引入jQuery.js文件");
 		return;
 	}
 
-	/**
-	 * 全局配置属性
-	 * 用来设置 分享图片、链接、标题、描述
-	 * @type {{}}
-     */
-	window.dataForWeixin = {
-		img: '', //需写绝对路径
-		url: '', //分享链接
-		title: '', //分享标题
-		desc: '' //分享描述 分享给朋友会用到
-	};
+	//配置分享图、链接、标题、描述
+	var dataForWeixin = {};
 
+	var $weixinjs = $("script[src*='weixin.']");
 
-	//配置拉取验证地址
-	var interface = $("script[src*='weixin.']").attr("interface");
-	interface = !!interface ? interface : "http://game.sinreweb.com/Game/JsConfig/getSignPackage";
+	//配置拉取认证地址
+	var _interface = $weixinjs.attr("interface");
+	_interface = !!_interface ? _interface : "http://game.sinreweb.com/Game/JsConfig/getSignPackage";
 
-	//配置返回的数据类型，默认为jsonp 可通过配置 json="json"属性来改为json数据格式
-	var dataType = $("script[src*='weixin.']").attr("json");
+	//配置返回的数据类型，默认为jsonp 可通过配置json="json"属性来改为json数据格式
+	var dataType = $weixinjs.attr("json");
 	dataType = !!dataType ? dataType : "jsonp";
+
+	//配置是否开启调试模式
+	var debug = $weixinjs.attr("debug");
+	debug = !!debug ? debug : false;
 
 	var weixin = {
 		data: {
-			debug: false,
+			debug: debug,
 			appId: '',
 			timestamp: '',
 			nonceStr: '',
 			signature: '',
 			jsApiList: ['checkJsApi','onMenuShareTimeline','onMenuShareAppMessage','onMenuShareQQ','onMenuShareWeibo','hideMenuItems','showMenuItems','hideAllNonBaseMenuItem','showAllNonBaseMenuItem','translateVoice','startRecord','stopRecord','onRecordEnd','playVoice','pauseVoice','stopVoice','uploadVoice','downloadVoice','chooseImage','previewImage','uploadImage','downloadImage','getNetworkType','openLocation','getLocation','hideOptionMenu','showOptionMenu','closeWindow','scanQRCode','chooseWXPay','openProductSpecificView','addCard','chooseCard','openCard']
 		},
-		handleQueue: [],
+		handleQueue: [], //执行队列数组
 		shareTimelineCallback: {
-			success: function () {
+			success() {
 				//alert('分享到朋友圈成功')
 			},
 			cancel: function () {
@@ -91,12 +78,12 @@
 		ready: function (fn) {
 			(typeof fn == "function") && this.handleQueue.push(fn);
 		},
-		get:function(){
+		get: function(){
 			weixin.images = {localId: [], serverId: []};
 			weixin.voice = {localId: '', serverId: ''};
-			//只有在微信端拉取验证
+			//拉取微信认证
 			$(function () {
-				var url = interface;
+				var url = _interface;
 				$.get(url, {url: location.href}, function(res){
 					weixin.data.appId = res.appId;
 					weixin.data.timestamp = res.timestamp;
@@ -107,41 +94,34 @@
 			});
 		},
 		init: function() {
-			var self = this;
 			wx.config(weixin.data);
 			wx.ready(function() {
 				//weixin.checkJsApi();
 				weixin.bind();
 
 				//执行处理函数队列
-				for(var i = 0, len = self.handleQueue.length; i < len; i++){
-					self.handleQueue[i].call(self);
+				for(var i = 0, len = weixin.handleQueue.length; i < len; i++){
+					weixin.handleQueue[i].call(weixin);
 				}
 			})
 		},
 		checkJsApi: function(call){//是否支持  回调参数res  bool:是否支持
 			wx.checkJsApi({jsApiList: ['getNetworkType', 'previewImage'], success: function(res){
-				call && call(res,res.errMsg.indexOf('ok') > -1);
+				call && call(res, res.errMsg.indexOf('ok') > -1);
 			}});
 		},
 		MenuShareTimeline: function(success, cancel, trigger, url, title, img, desc){//分享到朋友圈
 			wx.onMenuShareTimeline({
-				title: dataForWeixin.title,
-				link: dataForWeixin.url,
-				imgUrl: dataForWeixin.img,
-				desc:dataForWeixin.desc,
+				title: dataForWeixin.timeline.title,
+				link: dataForWeixin.timeline.url,
+				imgUrl: dataForWeixin.timeline.img,
+				desc:dataForWeixin.timeline.desc,
 				trigger: function (res) {
-					// alert('用户点击分享到朋友圈');
+					//alert('用户点击分享到朋友圈');
 					trigger && trigger(res);
 				},
 				success: function (res) {
 					//alert('已分享');
-					//Main.get('http://game.sinreweb.com/Doov/Index/jdb_send',{},function(){})
-					var redirectflag = $('#redirectflag').val();
-					var url = $('#redirectflag').data('url');
-					if(redirectflag){
-						window.location.href = url;
-					}
 					success && success(res);
 				},
 				cancel: function (res) {
@@ -156,10 +136,10 @@
 		},
 		MenuShareQQ: function(success, cancel, trigger, url, title, img, desc){//分享到QQ
 			wx.onMenuShareQQ({
-				title: dataForWeixin.title,
-				link: dataForWeixin.url,
-				imgUrl: dataForWeixin.img,
-				desc: dataForWeixin.desc,
+				title: dataForWeixin.qq.title,
+				link: dataForWeixin.qq.url,
+				imgUrl: dataForWeixin.qq.img,
+				desc: dataForWeixin.qq.desc,
 				trigger: function (res) {
 					//alert('用户点击分享到QQ');
 					trigger && trigger(res);
@@ -183,22 +163,16 @@
 		},
 		MenuShareAppMessage: function(success, cancel, trigger, url, title, img, desc){//发送给朋友
 			wx.onMenuShareAppMessage({
-				title: dataForWeixin.title,
-				link: dataForWeixin.url,
-				imgUrl: dataForWeixin.img,
-				desc: dataForWeixin.desc,
+				title: dataForWeixin.app.title,
+				link: dataForWeixin.app.url,
+				imgUrl: dataForWeixin.app.img,
+				desc: dataForWeixin.app.desc,
 				trigger: function (res) {
 					//alert('用户点击发送给朋友');
 					trigger && trigger(res);
 				},
 				success: function (res) {
 					//alert('已分享');
-					//Main.get('http://game.sinreweb.com/Doov/Index/jdb_send',{},function(){})
-					var redirectflag = $('#redirectflag').val();
-					var url = $('#redirectflag').data('url');
-					if(redirectflag){
-						window.location.href = url;
-					}
 					success && success(res);
 				},
 				cancel: function (res) {
@@ -213,10 +187,10 @@
 		},
 		MenuShareWeibo: function(success, cancel, trigger, url, title, img, desc){//分享到微博
 			wx.onMenuShareWeibo({
-				title: dataForWeixin.title,
-				link: dataForWeixin.url,
-				imgUrl: dataForWeixin.img,
-				desc: dataForWeixin.desc,
+				title: dataForWeixin.weibo.title,
+				link: dataForWeixin.weibo.url,
+				imgUrl: dataForWeixin.weibo.img,
+				desc: dataForWeixin.weibo.desc,
 				trigger: function (res) {
 					//alert('用户点击分享到微博');
 					trigger && trigger(res);
@@ -242,7 +216,7 @@
 			wx.chooseImage({
 				success: function (res) {
 					//call && call(res);
-					weixin.images.localId=res.localIds;// 保存本地图片的id 由 微信提供的  数组中的内容可以直接赋值到src    微信会去解析地址显示成图片
+					weixin.images.localId = res.localIds;// 保存本地图片的id是由微信提供的  数组中的内容可以直接赋值到src    微信会去解析地址显示成图片
 					return ;
 					/*for(var i=0;i<res.localIds.length;i++){
 					 var img=$('<img src='+res.localIds[i]+'  style="width:30px;" id="id_img_'+i+'">')
@@ -259,18 +233,17 @@
 		uploadImage: function(){
 			if(weixin.images.localId.length == 0){
 				alert('请先选择图片');
-				return ;
+				return;
 			}
 			var i = 0, length = weixin.images.localId.length, data = [];
-			function upload(){
+			(function upload(){
 				wx.uploadImage({
-					localId:weixin.images.localId[i],
-					isShowProgressTips:0,
+					localId: weixin.images.localId[i],
+					isShowProgressTips: 0,
 					success: function(res){
 						i++;
-						alert('已上传'+i+res.serverId);
-						weixin.images.serverId.push(res.serverId);//返回的是服务器图片的id
-						//$('body').append($('<img src='+res.serverId+' style="height:20px;">'))
+						//alert('已上传' + i + res.serverId);
+						weixin.images.serverId.push(res.serverId); //返回的是服务器图片的id
 						if(i < length){
 							upload();
 						}
@@ -279,33 +252,29 @@
 						alert(JSON.stringify(res));
 					}
 				})
-			}
-			upload();
+			})();
 		},
-		download:function(){//获取图片是传递服务器的id返回本地图片的id,和chooseImage返回的是一样的。
+		download: function(success){//获取图片是传递服务器的id返回本地图片的id,和chooseImage返回的是一样的。
 			if(weixin.images.serverId.length === 0) {
 				alert('请先使用 uploadImage 上传图片')
-				return ;
+				return;
 			}
 			var i = 0, length = weixin.images.serverId.length;
-			function download(){
+			(function download(){
 				wx.downloadImage({
 					serverId: weixin.images.serverId[i],
 					success: function(res){
 						i++;
-						var img = $('<img src='+res.localId+'  style="width:30px;" id="id_img_s'+i+'">')
-						$('body').append(img)
-						$('body').append(res.localId)
+						success && success(res);
 						//alert(JSON.stringify(res))
 						if(i < length){
 							download();
 						}
 					}
 				})
-			}
-			download();
+			})();
 		},
-		startRecord: function(success,cancel){//开始录音  参数：成功  失败 回调
+		startRecord: function(success, cancel){//开始录音  参数：成功  失败 回调
 			wx.startRecord({
 				cancel: function(){
 					cancel && cancel();
@@ -397,7 +366,6 @@
 					}
 				})
 			}
-
 		},
 		downloadVoice: function(success,obj){//下载服务器语音  参数：成功回调   下载的服务器语音id
 			if(obj){
@@ -539,7 +507,6 @@
 					//alert(res.errMsg);
 					success && success (res);
 				}
-
 			});
 		},
 		openProductSpecificView: function(id,type){  //跳转到商品页
@@ -594,45 +561,40 @@
 			weixin.MenuShareQQ(weixin.shareQQCallback.success, weixin.shareQQCallback.cancel, weixin.shareQQCallback.trigger);
 			weixin.MenuShareAppMessage(weixin.shareAppMessageCallback.success, weixin.shareAppMessageCallback.cancel, weixin.shareAppMessageCallback.trigger)
 			weixin.MenuShareWeibo(weixin.shareWeiboCallback.success, weixin.shareWeiboCallback.cancel, weixin.shareWeiboCallback.trigger);
-
-			//选择本地或拍照图片
-			$('#span_6').on('click',function(){
-				weixin.chooseImage(function(res){
-					for(var i=0;i<res.localIds.length;i++){
-						var img=$('<img src='+res.localIds[i]+'  style="width:30px;" id="id_img_'+i+'">')
-						$('body').append(img);
-					}
-				});
-			})
-
-			//预览图片
-			$('#span_7').on('click',function(){
-				var curr=$(this).data('imgcurrnet');
-				var imgs=$(this).data('imgs').split(',');
-				wx.previewImage({
-					current: curr,
-					urls: imgs
-				});
-			});
-			$('#span_8').on('click',function(){
-				weixin.uploadImage();
-			});
-			$('#span_9').on('click',function(){
-				weixin.download();
-			});
 		},
 		setDataForWeixin: function (data, callback) {
 			/*
-			* 重新设置分享文案
-			* data数据结构与window.dataForWeixin相同
-			* data = {
-			* 	img: '', //需写绝对路径
+			* 设置分享文案 weixin.setDataForWeixin(data)
+			* data数据结构如下：
+			* {
+			* 	img: '', //分享图，需写绝对路径
 			* 	url: '', //分享链接
 			* 	title: '', //分享标题
-			* 	desc: '' //分享描述 分享给朋友会用到
+			* 	desc: '' //分享描述
 			* };
+			*
+			* 如果要单独重置 分享到朋友圈、朋友、QQ、微博
+			* 可在data参数中添加，相应的属性
+			* 	单独重置分享到朋友圈：{timelin: true, img: '', url: '', title: '', desc: ''}
+			* 	单独重置分享到朋友：{app: true, img: '', url: '', title: '', desc: ''}
+			* 	单独重置分享到QQ：{qq: true, img: '', url: '', title: '', desc: ''}
+			* 	单独重置分享到微博：{weibo: true, img: '', url: '', title: '', desc: ''}
 			* */
-			$.extend(window.dataForWeixin, data || {});
+
+			if(data.timeline) {
+				dataForWeixin.timeline = data;
+			}else if(data.qpp) {
+				dataForWeixin.app = data;
+			}else if(data.qq) {
+				dataForWeixin.qq = data;
+			}else if(data.weibo) {
+				dataForWeixin.weibo = data;
+			}else{
+				dataForWeixin.timeline = data;
+				dataForWeixin.qq = data;
+				dataForWeixin.app = data;
+				dataForWeixin.weibo = data;
+			}
 
 			callback && callback();
 

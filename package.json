@@ -1,0 +1,18 @@
+{
+  "name": "weixinLib",
+  "version": "3.0.0",
+  "description": "对微信JSAPI封装的代码库",
+  "scripts": {
+    "build": "webpack --watch"
+  },
+  "author": "renjie",
+  "devDependencies": {
+    "babel-core": "^6.26.0",
+    "babel-loader": "^7.1.2",
+    "babel-preset-es2015": "^6.24.1",
+    "html-webpack-plugin": "^2.30.1",
+    "webpack": "^3.5.6",
+    "webpack-merge": "^4.1.0"
+  },
+  "dependencies": {}
+}
